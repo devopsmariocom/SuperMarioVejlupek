@@ -1,4 +1,6 @@
 -- Konstanta a nastavení okna
+package.path = package.path .. ";src/?.lua"
+local Slime = require("slime")
 function love.load()
     -- Konstanty
     WORLD_WIDTH    = 10000
@@ -30,78 +32,8 @@ function love.load()
     ----------------------------------------------------------------------------
     -- Definice hrdiny
     ----------------------------------------------------------------------------
-    hrac = {
-        x = 50,
-        y = 580,  -- počáteční pozice dole
-        w = 20,
-        h = 20,
-
-        baseSpeed = HERO_BASE_SPEED,
-        rychlost   = HERO_BASE_SPEED,   -- aktuální horizontální rychlost
-        rychlostY = 0,                -- svislá rychlost
-        naZemi    = false,
-        maxSkoku  = HERO_MAX_JUMPS,
-        zbyvajiciSkoky = HERO_MAX_JUMPS,
-
-        health = {
-            red  = 3,
-            pink = 3,
-        },
-        activeColor = "red",
-        colors = {
-            red  = {1, 0, 0},
-            pink = {1, 0.7, 0.8},
-        },
-
-        isBig = false,        -- BIG mode umožňuje bambitku
-        hasCilindr = false,
-        hasSmoking = false,
-        spaceDrzeno = false,
-        switchCooldown = 0,
-
-        flyCloud = nil,       -- dočasné létání
-        isOnSlime = false,    -- zda hrdina leze po slizu
-
-        getColor = function(self)
-            return self.colors[self.activeColor]
-        end,
-
-        takeDamage = function(self)
-            if godMode then return end
-
-            if self.isBig then
-                -- Velký hráč se jen zmenší
-                self.isBig = false
-                self.rychlost = self.baseSpeed
-                return
-            end
-
-            self.health[self.activeColor] = self.health[self.activeColor] - 1
-            if self.health[self.activeColor] <= 0 then
-                if self.activeColor == "red" then
-                    if self.health["pink"] > 0 then
-                        self.activeColor = "pink"
-                    else
-                        gameOver = true
-                    end
-                else
-                    if self.health["red"] > 0 then
-                        self.activeColor = "red"
-                    else
-                        gameOver = true
-                    end
-                end
-            end
-        end,
-
-        switchColor = function(self)
-            if self.activeColor == "red" and self.health["pink"] > 0 then
-                self.activeColor = "pink"
-            elseif self.activeColor == "pink" and self.health["red"] > 0 then
-                self.activeColor = "red"
-            end
-        end,
-    }
+    local Hero = require("hero")
+    hrac = Hero.new()
 
     ----------------------------------------------------------------------------
     -- Střely hrdiny (mráčky z bambitky)
@@ -111,51 +43,8 @@ function love.load()
     ----------------------------------------------------------------------------
     -- Platformy
     ----------------------------------------------------------------------------
-    platformy = {}
-    -- Dolní podlaha (celý svět)
-    table.insert(platformy, {
-        x = 0,
-        y = 580,
-        w = WORLD_WIDTH,
-        h = 20,
-        bounce = false,
-        falling = false,
-        color = {0.7, 0.3, 0.3}
-    })
-    lastSafePlatform = platformy[1]
-
-    -- Procedurálně generované platformy
-    -- Parametry: aby vzdálenost mezi platformami byla přijatelná (hráč vždy doskočí)
-    local currentX = 50
-    local currentY = 580
-    local minXGap = 80
-    local maxXGap = 140
-    local minYDelta = -40
-    local maxYDelta = 40
-    local minWidth  = 100
-    local maxWidth  = 200
-    local bounceProbability  = 0.1
-    local fallingProbability = 0.1
-
-    while currentX < WORLD_WIDTH - 300 do
-        local gap = love.math.random(minXGap, maxXGap)
-        currentX = currentX + gap
-        local yDelta = love.math.random(minYDelta, maxYDelta)
-        currentY = currentY + yDelta
-        -- Zajistíme, že platforma bude umístěna v rozmezí dosažitelné výšky (od 400 do 580)
-        if currentY < 400 then currentY = 400 end
-        if currentY > 580 then currentY = 580 end
-        local platWidth = love.math.random(minWidth, maxWidth)
-        table.insert(platformy, {
-            x = currentX,
-            y = currentY,
-            w = platWidth,
-            h = 20,
-            bounce = (love.math.random() < bounceProbability),
-            falling = (love.math.random() < fallingProbability),
-            color = {0.7, 0.3, 0.3}
-        })
-    end
+    local Platforms = require("platforms")
+    platformy, lastSafePlatform = Platforms.generate(WORLD_WIDTH)
 
     ----------------------------------------------------------------------------
     -- Mystery boxy
@@ -171,21 +60,9 @@ function love.load()
     })
 
     ----------------------------------------------------------------------------
-    -- Sliz (dynamické segmenty)
+    -- Sliz (dynamické segmenty) - přeneseno do modulu Slime
     ----------------------------------------------------------------------------
-    slizSegments = {}
-    for i = 1, 5 do
-        local segX = 600 * i
-        local seg = {
-            x = segX,
-            topY = -200,
-            bottomBase = love.math.random(80, 300),
-            w = 20,
-            color = {0, 1, 0},
-            phase = 0
-        }
-        table.insert(slizSegments, seg)
-    end
+    slizSegments = Slime.generate()
 
     ----------------------------------------------------------------------------
     -- Nepřátelé (včetně Mega bosse)
@@ -309,12 +186,6 @@ local function updateGiantPoop(dt)
     end
 end
 
-local function updateSlizSegments(dt)
-    for _, sl in ipairs(slizSegments) do
-        sl.phase = sl.phase + dt
-        sl.dynamicBottom = sl.bottomBase + math.sin(sl.phase) * 50
-    end
-end
 
 local function updateFlyingStatus(dt)
     local isFlying = cheatFlyMode
@@ -433,34 +304,6 @@ function updateMracky(dt)
     end
 end
 
-local function updateSlizCollision(dt, isFlying)
-    hrac.isOnSlime = false
-    if not isFlying then
-        for _, sl in ipairs(slizSegments) do
-            local slimeRect = {
-                x = sl.x,
-                y = sl.topY,
-                w = sl.w,
-                h = sl.dynamicBottom - sl.topY
-            }
-            if slimeRect.h < 0 then
-                slimeRect.y = slimeRect.y + slimeRect.h
-                slimeRect.h = -slimeRect.h
-            end
-            if kolize(hrac, slimeRect) then
-                hrac.isOnSlime = true
-                break
-            end
-        end
-    end
-
-    if hrac.isOnSlime and not isFlying then
-        hrac.rychlostY = 0
-        if love.keyboard.isDown("up") then
-            hrac.y = hrac.y - 100 * dt
-        end
-    end
-end
 
 local function updatePlatformCollision(dt, isFlying)
     if not isFlying and not hrac.isOnSlime then
@@ -621,14 +464,14 @@ function love.update(dt)
     end
 
     updateGiantPoop(dt)
-    updateSlizSegments(dt)
+    Slime.update(slizSegments, dt)
     local isFlying = updateFlyingStatus(dt)
     updateHeroMovement(dt, isFlying)
     updateHeroJump(dt, isFlying)
     updateHeroSwitchColor(dt)
     handleHeroShooting()
     updateMracky(dt)
-    updateSlizCollision(dt, isFlying)
+    Slime.checkCollision(slizSegments, hrac, dt, isFlying)
     updatePlatformCollision(dt, isFlying)
     updateMysteryBlocks(dt)
     updateHeroFall(isFlying)
@@ -664,13 +507,8 @@ function love.draw()
     -- Sliz segmenty
     for _, sl in ipairs(slizSegments) do
         love.graphics.setColor(sl.color)
-        local topY = sl.topY
-        local bottom = sl.dynamicBottom
-        local hh = bottom - topY
-        if hh < 0 then
-            topY = bottom
-            hh = -hh
-        end
+        local topY = sl.y + (sl.offset or 0)
+        local hh = sl.h
         love.graphics.rectangle("fill", sl.x, topY, sl.w, hh)
     end
 

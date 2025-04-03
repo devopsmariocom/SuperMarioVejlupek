@@ -20,23 +20,22 @@ jobs:
       # Create a dist directory for the game
       - name: Create dist directory
         run: |
-          mkdir -p dist
-          # Check if canvas-game directory exists
-          if [ -d "canvas-game" ]; then
-            # If canvas-game exists, copy its contents to dist/canvas-game
-            mkdir -p dist/canvas-game
-            cp -r * dist/
-          else
-            # If no canvas-game directory, copy js files directly
-            mkdir -p dist/js
-            cp -r js/* dist/js/
+
+          mkdir -p dist/js
+          cp -r js/* dist/js/
+          # Copy root index.html, game.html and other files
+          cp index.html dist/ || echo "Warning: index.html not found or not copied"
+          cp game.html dist/ || echo "Warning: game.html not found or not copied"
+          cp *.css dist/ 2>/dev/null || echo "No CSS files found"
+          cp *.png dist/ 2>/dev/null || echo "No PNG files found"
+          cp *.jpg dist/ 2>/dev/null || echo "No JPG files found"
+          cp *.ico dist/ 2>/dev/null || echo "No ICO files found"
+
+          # Create a simple index.html if none exists
+          if [ ! -f "dist/index.html" ]; then
+            echo "Creating a basic index.html..."
+            echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Super Mario Vejlupek</title><meta http-equiv="refresh" content="0;url=game.html"></head><body><p>Redirecting to <a href="game.html">game</a>...</p></body></html>' > dist/index.html
           fi
-          # Copy root index.html and other files
-          cp index.html dist/ || true
-          cp *.css dist/ || true
-          cp *.png dist/ || true
-          cp *.jpg dist/ || true
-          cp *.ico dist/ || true
 
       # Optional: Minify JavaScript and CSS (if you want to optimize)
       - name: Set up Node.js
@@ -104,7 +103,7 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: canvas-game-build
+          name: build
           path: dist
 
       # Deploy to GitHub Pages

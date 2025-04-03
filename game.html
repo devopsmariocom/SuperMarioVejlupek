@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Mario Vejlupek - Hra</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background-color: #222;
+    }
+
+    canvas {
+      display: block;
+      background-color: #87CEEB;
+      /* Sky blue background */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #fullscreenButton {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+      padding: 8px 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #fullscreenButton:hover {
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    #backButton {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      padding: 8px 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    #backButton:hover {
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <button id="fullscreenButton">Fullscreen</button>
+  <a href="index.html" id="backButton">← Zpět</a>
+
+  <!-- Game modules -->
+  <script src="js/utils.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/platform.js"></script>
+  <script src="js/enemy.js"></script>
+  <script src="js/boss.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>

@@ -33,7 +33,12 @@ class Game {
     this.platforms = [];
     this.enemies = [];
     this.coins = [];
+    this.mysteryBoxes = []; // Add mystery boxes array
     this.boss = null;
+
+    // UI elements
+    this.activeEffectMessage = null;
+    this.effectMessageTimer = 0;
 
     // Initialize input handler
     Input.init();
@@ -276,10 +281,17 @@ class Game {
     // Generate enemies - don't place them near the boss
     this.enemies = EnemyGenerator.generateEnemies(this.platforms, this.level + 2);
 
+    // Generate mystery boxes
+    this.mysteryBoxes = MysteryBoxGenerator.generateMysteryBoxes(this.platforms, 5 + this.level);
+
     // Create boss at the end of the level
     const bossX = this.levelLength - 250;
     const bossY = this.baseHeight - 150 - 100; // Position on the final platform
     this.boss = new Boss(bossX, bossY);
+
+    // Reset effect message
+    this.activeEffectMessage = null;
+    this.effectMessageTimer = 0;
   }
 
   /**
@@ -336,6 +348,27 @@ class Game {
     // Don't let camera go beyond level bounds
     this.cameraX = Math.max(0, Math.min(this.cameraX, this.levelLength - this.baseWidth));
 
+    // Update mystery boxes that are visible or close to the screen
+    for (let box of this.mysteryBoxes) {
+      // Only update boxes near the camera view
+      if (Math.abs(box.x - this.cameraX) < this.baseWidth * 1.5) {
+        box.update();
+
+        // Check for collision with player
+        if (box.checkCollision(this.player)) {
+          // Activate mystery box effect
+          const effect = box.activate(this.player);
+
+          // Display effect message
+          this.activeEffectMessage = effect;
+          this.effectMessageTimer = 180; // Show for 3 seconds (60 frames per second)
+
+          // Add points for collecting a mystery box
+          this.player.score += 50;
+        }
+      }
+    }
+
     // Update enemies that are visible or close to the screen
     for (let enemy of this.enemies) {
       // Only update enemies near the camera view
@@ -351,7 +384,7 @@ class Game {
             this.enemies.splice(this.enemies.indexOf(enemy), 1);
             this.player.velocityY = -this.player.jumpForce / 2;
             this.player.score += 100;
-          } else {
+          } else if (!this.player.isInvincible) { // Skip if player is invincible
             // Player loses a life
             this.player.lives--;
             if (this.player.lives > 0) {
@@ -370,7 +403,7 @@ class Game {
       this.boss.update(this.player);
 
       // Check if boss throws banana at player
-      if (this.boss.checkBananaCollisions(this.player)) {
+      if (this.boss.checkBananaCollisions(this.player) && !this.player.isInvincible) {
         this.player.lives--;
         if (this.player.lives <= 0) {
           this.gameOver = true;
@@ -393,7 +426,10 @@ class Game {
 
     // Check if player fell off the bottom
     if (this.player.y > this.baseHeight + 100) {
-      this.player.lives--;
+      if (!this.player.isInvincible) {
+        this.player.lives--;
+      }
+
       if (this.player.lives > 0) {
         // Reset player position but keep camera position
         this.player.x = this.cameraX + 100;
@@ -404,6 +440,17 @@ class Game {
         this.isRunning = false;
       }
     }
+
+    // Update effect message timer
+    if (this.effectMessageTimer > 0) {
+      this.effectMessageTimer--;
+      if (this.effectMessageTimer === 0) {
+        this.activeEffectMessage = null;
+      }
+    }
+
+    // Reset upPressed flag at the end of each frame
+    Input.keys.upPressed = false;
   }
 
   /**
@@ -440,6 +487,16 @@ class Game {
       }
     }
 
+    // Draw mystery boxes that are visible
+    for (let box of this.mysteryBoxes) {
+      // Only draw boxes that are visible or close to the screen
+      if (!box.isCollected &&
+          box.x + box.width > cameraOffsetX - 50 &&
+          box.x < cameraOffsetX + this.baseWidth + 50) {
+        box.draw(this.ctx, cameraOffsetX);
+      }
+    }
+
     // Draw enemies that are visible
     for (let enemy of this.enemies) {
       // Only draw enemies that are visible or close to the screen
@@ -462,6 +519,11 @@ class Game {
 
     // Draw UI
     this.drawUI();
+
+    // Draw effect message if active
+    if (this.activeEffectMessage && this.effectMessageTimer > 0) {
+      this.drawEffectMessage();
+    }
 
     // Draw win screen if game is won
     if (this.gameWon) {
@@ -593,6 +655,85 @@ class Game {
       this.ctx.fillText('BOSS', this.width / 2, bossHealthY + bossHealthHeight + fontSize);
       this.ctx.textAlign = 'left'; // Reset text align
     }
+  }
+
+  /**
+   * Draw effect message when a mystery box is collected
+   */
+  drawEffectMessage() {
+    if (!this.activeEffectMessage) return;
+
+    const effect = this.activeEffectMessage;
+    const fadeInTime = 30; // 0.5 seconds
+    const fadeOutTime = 30; // 0.5 seconds
+
+    // Calculate opacity based on timer
+    let opacity = 1;
+    if (this.effectMessageTimer > 150) {
+      // Fade in
+      opacity = (180 - this.effectMessageTimer) / fadeInTime;
+    } else if (this.effectMessageTimer < fadeOutTime) {
+      // Fade out
+      opacity = this.effectMessageTimer / fadeOutTime;
+    }
+
+    this.ctx.save();
+
+    // Background for message
+    const messageWidth = Math.max(250, Math.floor(300 * this.scale));
+    const messageHeight = Math.max(70, Math.floor(80 * this.scale));
+    const messageX = (this.width - messageWidth) / 2;
+    const messageY = Math.max(80, Math.floor(100 * this.scale));
+
+    // Determine color based on effect type (positive or negative)
+    let bgColor, textColor;
+    const negativeEffects = ['poop', 'glitch', 'reverse', 'shrink'];
+
+    if (negativeEffects.includes(effect.type)) {
+      // Negative effect - red background
+      bgColor = `rgba(255, 0, 0, ${opacity * 0.7})`;
+      textColor = '#FFFFFF';
+    } else {
+      // Positive effect - green background
+      bgColor = `rgba(0, 128, 0, ${opacity * 0.7})`;
+      textColor = '#FFFFFF';
+    }
+
+    // Draw message background with rounded corners
+    this.ctx.fillStyle = bgColor;
+    this.ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+    this.ctx.lineWidth = 2;
+
+    // Create rounded rectangle
+    this.ctx.beginPath();
+    const radius = 10;
+    this.ctx.moveTo(messageX + radius, messageY);
+    this.ctx.lineTo(messageX + messageWidth - radius, messageY);
+    this.ctx.arcTo(messageX + messageWidth, messageY, messageX + messageWidth, messageY + radius, radius);
+    this.ctx.lineTo(messageX + messageWidth, messageY + messageHeight - radius);
+    this.ctx.arcTo(messageX + messageWidth, messageY + messageHeight, messageX + messageWidth - radius, messageY + messageHeight, radius);
+    this.ctx.lineTo(messageX + radius, messageY + messageHeight);
+    this.ctx.arcTo(messageX, messageY + messageHeight, messageX, messageY + messageHeight - radius, radius);
+    this.ctx.lineTo(messageX, messageY + radius);
+    this.ctx.arcTo(messageX, messageY, messageX + radius, messageY, radius);
+    this.ctx.closePath();
+
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    // Draw message text
+    this.ctx.fillStyle = textColor;
+    const titleFontSize = Math.max(20, Math.floor(24 * this.scale));
+    const descFontSize = Math.max(16, Math.floor(18 * this.scale));
+
+    this.ctx.font = `bold ${titleFontSize}px Arial`;
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(effect.name, this.width / 2, messageY + titleFontSize + 5);
+
+    this.ctx.font = `${descFontSize}px Arial`;
+    this.ctx.fillText(effect.description, this.width / 2, messageY + titleFontSize + descFontSize + 10);
+
+    this.ctx.restore();
   }
 
   /**

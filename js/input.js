@@ -6,7 +6,8 @@ const Input = {
   keys: {
     left: false,
     right: false,
-    up: false
+    up: false,
+    upPressed: false // Track if up key was just pressed this frame
   },
 
   // Touch controls
@@ -54,6 +55,9 @@ const Input = {
         case 'ArrowUp':
         case 'w':
         case ' ':
+          if (!this.keys.up) {
+            this.keys.upPressed = true; // Set to true only on initial press
+          }
           this.keys.up = true;
           break;
       }
@@ -222,6 +226,9 @@ const Input = {
     // Jump button
     this.touchControls.jumpBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      if (!this.keys.up) {
+        this.keys.upPressed = true; // Set to true only on initial press
+      }
       this.keys.up = true;
     }, { passive: false });
 

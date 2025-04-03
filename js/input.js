@@ -25,16 +25,16 @@ const Input = {
    * Initialize input event listeners
    */
   init: function () {
-    // Detect if device is mobile/tablet
-    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // FORCE TOUCH CONTROLS FOR ALL DEVICES
+    this.isMobile = true;
 
-    // Initialize keyboard controls
+    console.log('TOUCH CONTROLS ENABLED FOR ALL DEVICES');
+
+    // Initialize keyboard controls (always available)
     this.initKeyboardControls();
 
-    // Initialize touch controls if on mobile
-    if (this.isMobile) {
-      this.initTouchControls();
-    }
+    // Initialize touch controls for ALL devices
+    this.initTouchControls();
   },
 
   /**

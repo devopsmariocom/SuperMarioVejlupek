@@ -1,4 +1,77 @@
 /**
+ * Debug information for device detection - will run immediately
+ */
+(function () {
+  // Create a visible debug overlay
+  const debugOverlay = document.createElement('div');
+  debugOverlay.style.position = 'fixed';
+  debugOverlay.style.top = '10px';
+  debugOverlay.style.right = '10px';
+  debugOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+  debugOverlay.style.color = '#fff';
+  debugOverlay.style.padding = '10px';
+  debugOverlay.style.borderRadius = '5px';
+  debugOverlay.style.zIndex = '9999';
+  debugOverlay.style.maxWidth = '80%';
+  debugOverlay.style.fontSize = '12px';
+  debugOverlay.style.fontFamily = 'monospace';
+
+  // Add debug information
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform;
+  const maxTouchPoints = navigator.maxTouchPoints;
+  const hasTouch = 'ontouchend' in document;
+  const screenSize = window.screen.width + 'x' + window.screen.height;
+
+  // iPad detection tests
+  const isStandardIpad = /iPad/i.test(userAgent) || /iPad/i.test(platform);
+  const isIpadPro = (/MacIntel/i.test(platform) && maxTouchPoints > 1) ||
+    (/Macintosh/i.test(userAgent) && hasTouch);
+  const isIpadBySize = hasTouch &&
+    Math.min(window.screen.width, window.screen.height) >= 768 &&
+    Math.max(window.screen.width, window.screen.height) >= 1024;
+
+  // Set debug text
+  debugOverlay.innerHTML = `
+    <strong>DEVICE DEBUG INFO</strong><br>
+    User Agent: ${userAgent.substring(0, 50)}...<br>
+    Platform: ${platform}<br>
+    Touch Points: ${maxTouchPoints}<br>
+    Has Touch: ${hasTouch}<br>
+    Screen: ${screenSize}<br>
+    iPad Standard: ${isStandardIpad}<br>
+    iPad Pro: ${isIpadPro}<br>
+    iPad by Size: ${isIpadBySize}<br>
+    <strong>TOUCH MODE FORCED ON</strong>
+  `;
+
+  // Add to document when DOM is ready
+  if (document.body) {
+    document.body.appendChild(debugOverlay);
+  } else {
+    window.addEventListener('DOMContentLoaded', function () {
+      document.body.appendChild(debugOverlay);
+    });
+  }
+
+  // Also log to console
+  console.log('==========================================');
+  console.log('DEVICE DETECTION DEBUG - IMMEDIATE CHECK');
+  console.log('==========================================');
+  console.log('User Agent:', userAgent);
+  console.log('Platform:', platform);
+  console.log('Max Touch Points:', maxTouchPoints);
+  console.log('Has ontouchend:', hasTouch);
+  console.log('Screen size:', screenSize);
+  console.log('isStandardIpad:', isStandardIpad);
+  console.log('isIpadPro:', isIpadPro);
+  console.log('isIpadBySize:', isIpadBySize);
+  console.log('Combined iPad detection:', isStandardIpad || isIpadPro || isIpadBySize);
+  console.log('TOUCH MODE FORCED ON');
+  console.log('==========================================');
+})();
+
+/**
  * Player class for the platform game
  */
 class Player {
@@ -24,13 +97,59 @@ class Player {
     this.lives = 3;
     this.score = 0;
 
-    // Mobile-specific properties
-    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Detect iPad specifically - multiple approaches for different iPad models and iOS versions
+    const isStandardIpad = /iPad/i.test(navigator.userAgent) || /iPad/i.test(navigator.platform);
 
-    // Adjust properties for mobile if needed
-    if (this.isMobile) {
-      this.speed = 6; // Slightly faster movement on mobile for better responsiveness
-      this.jumpForce = 16; // Slightly higher jump on mobile
+    // Modern iPads with iPadOS report as MacIntel but have touch capabilities
+    // Using multiple detection methods for better reliability
+    const isIpadPro = (/MacIntel/i.test(navigator.platform) &&
+      navigator.maxTouchPoints &&
+      navigator.maxTouchPoints > 1) ||
+      (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+
+    // Additional iPad detection using screen size and touch capabilities
+    const isIpadBySize = 'ontouchend' in document &&
+      Math.min(window.screen.width, window.screen.height) >= 768 &&
+      Math.max(window.screen.width, window.screen.height) >= 1024;
+
+    // Combined iPad detection
+    this.isIpad = isStandardIpad || isIpadPro || isIpadBySize;
+
+    // Mobile detection (phones)
+    this.isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // General tablet detection for non-iPad tablets
+    this.isOtherTablet = /Android(?!.*Mobile)|Tablet/i.test(navigator.userAgent) ||
+      (!this.isIpad && navigator.maxTouchPoints > 1 && window.innerWidth >= 600);
+
+    // Combined tablet detection
+    this.isTablet = this.isIpad || this.isOtherTablet;
+
+    // Touch device (either mobile or tablet)
+    this.isTouchDevice = this.isMobile || this.isTablet;
+
+    // FORCE TOUCH DEVICE FOR TESTING - REMOVE IN PRODUCTION
+    this.isTouchDevice = true;
+
+    // Debug information - log to console for troubleshooting
+    console.log('Device detection info:');
+    console.log('- User Agent:', navigator.userAgent);
+    console.log('- Platform:', navigator.platform);
+    console.log('- Max Touch Points:', navigator.maxTouchPoints);
+    console.log('- Has ontouchend:', 'ontouchend' in document);
+    console.log('- Screen size:', window.screen.width, 'x', window.screen.height);
+    console.log('- isStandardIpad:', isStandardIpad);
+    console.log('- isIpadPro:', isIpadPro);
+    console.log('- isIpadBySize:', isIpadBySize);
+    console.log('- isIpad:', this.isIpad);
+    console.log('- isMobile:', this.isMobile);
+    console.log('- isTablet:', this.isTablet);
+    console.log('- isTouchDevice:', this.isTouchDevice);
+
+    // Adjust properties for touch devices
+    if (this.isTouchDevice) {
+      this.speed = 6; // Slightly faster movement on touch devices for better responsiveness
+      this.jumpForce = 16; // Slightly higher jump on touch devices
     }
 
     // Mystery box effect properties
@@ -104,8 +223,8 @@ class Player {
       this.canDoubleJump = true; // Enable double jump when first jump occurs
       this.hasDoubleJumped = false; // Reset double jump flag
 
-      // Add a small horizontal boost when jumping on mobile for better control
-      if (this.isMobile && (input.keys.left || input.keys.right)) {
+      // Add a small horizontal boost when jumping on touch devices for better control
+      if (this.isTouchDevice && (input.keys.left || input.keys.right)) {
         this.velocityX *= 1.2; // Boost horizontal movement during jump
       }
     }
@@ -129,8 +248,8 @@ class Player {
       }
     }
 
-    // Allow small jump control in the air on mobile
-    if (this.isMobile && this.isJumping && this.velocityY < 0) {
+    // Allow small jump control in the air on touch devices
+    if (this.isTouchDevice && this.isJumping && this.velocityY < 0) {
       // Slightly adjust jump height based on how long jump button is held
       if (!input.keys.up && this.velocityY < -5) {
         this.velocityY = -5; // Cut jump short if button released

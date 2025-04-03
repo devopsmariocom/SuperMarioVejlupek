@@ -1,0 +1,49 @@
+# Super Mario Vejlupek
+
+Funny Platformer project by Vali and Jasmi.
+
+## How to run the game
+
+You can play the game directly in your browser by visiting the GitHub Pages site:
+https://[your-github-username].github.io/supermariovejlupek/
+
+Alternatively, you can run the game locally by opening the `index.html` file in your browser.
+
+## Game Controls
+
+- **Move Left**: Left Arrow or A
+- **Move Right**: Right Arrow or D
+- **Jump**: Up Arrow, W, or Space
+- **Fullscreen**: Click the Fullscreen button in the top-right corner
+
+## Game Features
+
+- Platform jumping gameplay
+- Enemies to defeat
+- Boss battle at the end of the level who throws bananas
+- Responsive design that works on different screen sizes
+
+## Development
+
+This game is built using HTML5 Canvas and JavaScript. The code is organized into modules:
+
+- `game.js` - Main game engine
+- `player.js` - Player character logic
+- `enemy.js` - Enemy behavior
+- `boss.js` - Boss character and banana projectiles
+- `platform.js` - Platform and level generation
+- `input.js` - Input handling
+- `utils.js` - Utility functions
+
+## Continuous Deployment
+
+This project uses GitHub Actions to automatically deploy the game to GitHub Pages whenever changes are pushed to the main branch. The workflow:
+
+1. Checks out the repository
+2. Creates a distribution directory
+3. Minifies JavaScript and CSS files for better performance
+4. Deploys the game to GitHub Pages
+
+You can see the deployment workflow in `.github/workflows/deploy.yml`.
+
+![Game](Game.jpg)

@@ -1,16 +1,15 @@
-# .github/workflows/build.yml
+# .github/workflows/deploy.yml
 
-name: Build LÖVE Game
+name: Deploy Canvas Game to GitHub Pages
 
 on:
   push:
     branches:
       - main
-  release:
-    types: [created]
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,33 +17,100 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Set up Node.js environment
+      # Create a dist directory for the game
+      - name: Create dist directory
+        run: |
+          mkdir -p dist
+          # Check if canvas-game directory exists
+          if [ -d "canvas-game" ]; then
+            # If canvas-game exists, copy its contents to dist/canvas-game
+            mkdir -p dist/canvas-game
+            cp -r canvas-game/* dist/canvas-game/
+          else
+            # If no canvas-game directory, copy js files directly
+            mkdir -p dist/js
+            cp -r js/* dist/js/
+          fi
+          # Copy root index.html and other files
+          cp index.html dist/ || true
+          cp *.css dist/ || true
+          cp *.png dist/ || true
+          cp *.jpg dist/ || true
+          cp *.ico dist/ || true
+
+      # Optional: Minify JavaScript and CSS (if you want to optimize)
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16' # Specify the Node.js version you need
+          node-version: "16"
 
-      # Install dependencies
-      - name: Install Dependencies
-        run: npm install
+      - name: Install minification tools
+        run: npm install -g terser clean-css-cli
 
-      # Run the packaging script
-      - name: Package LÖVE Game
-        run: node package-love-game.js
+      - name: Minify JavaScript
+        run: |
+          # Minify JS in root js directory if it exists
+          if [ -d "dist/js" ]; then
+            for file in dist/js/*.js; do
+              if [ -f "$file" ]; then
+                terser "$file" -o "$file" -c -m
+              fi
+            done
+          fi
+
+          # Minify JS in canvas-game/js if it exists
+          if [ -d "dist/canvas-game/js" ]; then
+            for file in dist/canvas-game/js/*.js; do
+              if [ -f "$file" ]; then
+                terser "$file" -o "$file" -c -m
+              fi
+            done
+          fi
+
+      - name: Minify CSS
+        run: |
+          # Minify CSS in root css directory if it exists
+          if [ -d "dist/css" ]; then
+            for file in dist/css/*.css; do
+              if [ -f "$file" ]; then
+                cleancss -o "$file" "$file"
+              fi
+            done
+          fi
+
+          # Minify CSS in canvas-game/css if it exists
+          if [ -d "dist/canvas-game/css" ]; then
+            for file in dist/canvas-game/css/*.css; do
+              if [ -f "$file" ]; then
+                cleancss -o "$file" "$file"
+              fi
+            done
+          fi
+
+          # Minify any CSS files in the root
+          for file in dist/*.css; do
+            if [ -f "$file" ]; then
+              cleancss -o "$file" "$file"
+            fi
+          done
+
+      # Create a simple version file to track deployments
+      - name: Create version file
+        run: |
+          echo "Deployed on $(date)" > dist/version.txt
+          echo "Commit: ${{ github.sha }}" >> dist/version.txt
 
       # Upload build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: love-game-build
-          path: |
-            dist/*.html
-            dist/*.love
+          name: canvas-game-build
+          path: dist
 
-      # Optional: Deploy to GitHub Pages (if desired)
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+          force_orphan: true # Create a single-commit history for the gh-pages branch

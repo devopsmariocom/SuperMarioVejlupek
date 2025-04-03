@@ -102,7 +102,7 @@ jobs:
 
       # Upload build artifacts
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: canvas-game-build
           path: dist

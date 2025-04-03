@@ -281,8 +281,9 @@ class Game {
     // Generate enemies - don't place them near the boss
     this.enemies = EnemyGenerator.generateEnemies(this.platforms, this.level + 2);
 
-    // Generate mystery boxes
-    this.mysteryBoxes = MysteryBoxGenerator.generateMysteryBoxes(this.platforms, 5 + this.level);
+    // Generate mystery boxes - more boxes for better visibility
+    this.mysteryBoxes = MysteryBoxGenerator.generateMysteryBoxes(this.platforms, 10 + this.level * 2);
+    console.log("Generated mystery boxes:", this.mysteryBoxes.length);
 
     // Create boss at the end of the level
     const bossX = this.levelLength - 250;
@@ -491,8 +492,8 @@ class Game {
     for (let box of this.mysteryBoxes) {
       // Only draw boxes that are visible or close to the screen
       if (!box.isCollected &&
-          box.x + box.width > cameraOffsetX - 50 &&
-          box.x < cameraOffsetX + this.baseWidth + 50) {
+        box.x + box.width > cameraOffsetX - 50 &&
+        box.x < cameraOffsetX + this.baseWidth + 50) {
         box.draw(this.ctx, cameraOffsetX);
       }
     }

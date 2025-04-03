@@ -11,14 +11,15 @@ class MysteryBox {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 30;
-    this.height = 30;
+    this.width = 40; // Larger box
+    this.height = 40; // Larger box
     this.color = '#FFD700'; // Gold color
     this.isCollected = false;
     this.pulseDirection = 1;
     this.pulseAmount = 0;
     this.pulseSpeed = 0.05;
     this.questionMarkOpacity = 1;
+    this.glowSize = 10; // Larger glow
   }
 
   /**
@@ -53,20 +54,50 @@ class MysteryBox {
     ctx.save();
 
     // Outer glow
-    const glowSize = 5 + this.pulseAmount * 3;
-    ctx.shadowColor = 'rgba(255, 215, 0, 0.7)';
+    const glowSize = this.glowSize + this.pulseAmount * 5;
+    ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
     ctx.shadowBlur = glowSize;
 
-    // Box
+    // Box with rounded corners
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x - offsetX, this.y, this.width, this.height);
+    const radius = 8;
+
+    ctx.beginPath();
+    ctx.moveTo(this.x - offsetX + radius, this.y);
+    ctx.lineTo(this.x - offsetX + this.width - radius, this.y);
+    ctx.arcTo(this.x - offsetX + this.width, this.y, this.x - offsetX + this.width, this.y + radius, radius);
+    ctx.lineTo(this.x - offsetX + this.width, this.y + this.height - radius);
+    ctx.arcTo(this.x - offsetX + this.width, this.y + this.height, this.x - offsetX + this.width - radius, this.y + this.height, radius);
+    ctx.lineTo(this.x - offsetX + radius, this.y + this.height);
+    ctx.arcTo(this.x - offsetX, this.y + this.height, this.x - offsetX, this.y + this.height - radius, radius);
+    ctx.lineTo(this.x - offsetX, this.y + radius);
+    ctx.arcTo(this.x - offsetX, this.y, this.x - offsetX + radius, this.y, radius);
+    ctx.closePath();
+
+    ctx.fill();
+
+    // Add a border
+    ctx.strokeStyle = 'rgba(139, 69, 19, 0.8)'; // Brown border
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Question mark
     ctx.fillStyle = `rgba(0, 0, 0, ${this.questionMarkOpacity})`;
-    ctx.font = '20px Arial';
+    ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('?', this.x - offsetX + this.width / 2, this.y + this.height / 2);
+
+    // Add a small sparkle effect
+    if (Math.random() < 0.1) {
+      ctx.fillStyle = 'white';
+      const sparkleSize = 3 + Math.random() * 2;
+      const sparkleX = this.x - offsetX + Math.random() * this.width;
+      const sparkleY = this.y + Math.random() * this.height;
+      ctx.beginPath();
+      ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
   }
@@ -253,11 +284,13 @@ const MysteryBoxGenerator = {
 
     // Filter out suitable platforms (not at the very beginning or end)
     const suitablePlatforms = platforms.filter(p =>
-      p.width >= 100 && // Wide enough
-      p.x > 200 && // Not too close to start
-      p.x < 3800 && // Not too close to end
-      p.y < 550 // Not at the very bottom (ground)
+      p.width >= 50 && // Wide enough for a box
+      p.x > 100 && // Not too close to start
+      p.x < 4000 // Not too close to end
+      // Allow ground platforms too
     );
+
+    console.log("Suitable platforms for mystery boxes:", suitablePlatforms.length);
 
     // Shuffle platforms to get random distribution
     const shuffledPlatforms = [...suitablePlatforms].sort(() => 0.5 - Math.random());
@@ -267,14 +300,28 @@ const MysteryBoxGenerator = {
       const platform = shuffledPlatforms[i];
 
       // Position mystery box above the platform
-      const x = platform.x + Utils.randomInt(50, platform.width - 50);
-      const y = platform.y - 60; // Position above platform
+      const x = platform.x + Math.min(50, platform.width / 4) + Utils.randomInt(0, Math.max(0, platform.width - 100));
+      const y = platform.y - 80; // Position higher above platform
 
       // Create the mystery box
       const mysteryBox = new MysteryBox(x, y);
 
       // Add to mystery boxes array
       mysteryBoxes.push(mysteryBox);
+    }
+
+    // Add a few guaranteed boxes near the start for visibility
+    // Find ground platform at start
+    const startPlatform = platforms.find(p => p.y >= 550 && p.x < 100);
+    if (startPlatform) {
+      // Add 2-3 boxes in a row above the starting platform
+      const boxCount = Utils.randomInt(2, 3);
+      for (let i = 0; i < boxCount; i++) {
+        const x = 200 + i * 80; // Space them out
+        const y = startPlatform.y - 150; // High enough to be visible
+        const mysteryBox = new MysteryBox(x, y);
+        mysteryBoxes.push(mysteryBox);
+      }
     }
 
     return mysteryBoxes;

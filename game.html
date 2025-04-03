@@ -3,7 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Super Mario Vejlupek - Hra</title>
   <style>
     * {
@@ -11,6 +13,7 @@
       padding: 0;
       box-sizing: border-box;
       overflow: hidden;
+      touch-action: none;
     }
 
     html,
@@ -18,6 +21,9 @@
       width: 100%;
       height: 100%;
       background-color: #222;
+      position: fixed;
+      /* Prevent bounce on mobile */
+      overflow: hidden;
     }
 
     canvas {
@@ -29,6 +35,7 @@
       left: 0;
       width: 100%;
       height: 100%;
+      touch-action: none;
     }
 
     #fullscreenButton {
@@ -42,6 +49,15 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      font-size: 16px;
+      /* Larger for touch */
+      min-width: 44px;
+      /* Minimum touch target size */
+      min-height: 44px;
+      /* Minimum touch target size */
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #fullscreenButton:hover {
@@ -61,11 +77,37 @@
       cursor: pointer;
       text-decoration: none;
       font-family: Arial, sans-serif;
-      font-size: 14px;
+      font-size: 16px;
+      /* Larger for touch */
+      min-width: 44px;
+      /* Minimum touch target size */
+      min-height: 44px;
+      /* Minimum touch target size */
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #backButton:hover {
       background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    /* Touch button styles */
+    .touch-button {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* Adjust UI for smaller screens */
+    @media (max-width: 768px) {
+
+      #fullscreenButton,
+      #backButton {
+        padding: 10px 15px;
+        font-size: 18px;
+      }
     }
   </style>
 </head>

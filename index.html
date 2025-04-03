@@ -3,13 +3,16 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Super Mario Vejlupek - Platform Game</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     html,
@@ -24,6 +27,7 @@
       align-items: center;
       justify-content: center;
       text-align: center;
+      overflow-x: hidden;
     }
 
     h1 {
@@ -37,6 +41,7 @@
       font-size: 1.2rem;
       margin-bottom: 2rem;
       max-width: 600px;
+      padding: 0 20px;
     }
 
     .play-button {
@@ -50,9 +55,14 @@
       font-weight: bold;
       transition: background-color 0.3s, transform 0.3s;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      min-width: 200px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .play-button:hover {
+    .play-button:hover, .play-button:active {
       background-color: #FF7043;
       transform: translateY(-3px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
@@ -96,14 +106,73 @@
       border-radius: 0 0 20px 20px;
     }
 
-    @media (max-width: 600px) {
+    .controls-info {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      opacity: 0.7;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
       h1 {
         font-size: 1.8rem;
+        padding: 0 10px;
       }
 
       p {
         font-size: 1rem;
-        padding: 0 1rem;
+        padding: 0 20px;
+        margin-bottom: 1.5rem;
+      }
+
+      .play-button {
+        padding: 15px 30px;
+        font-size: 1.3rem;
+        min-height: 60px;
+      }
+
+      .character {
+        width: 80px;
+        height: 120px;
+        margin: 1.5rem auto;
+      }
+
+      .character::before, .character::after {
+        width: 16px;
+        height: 16px;
+        top: 25px;
+      }
+
+      .character::before {
+        left: 16px;
+      }
+
+      .character::after {
+        right: 16px;
+      }
+
+      .mouth {
+        width: 32px;
+        height: 16px;
+        bottom: 25px;
+        left: 24px;
+      }
+
+      .controls-info {
+        margin-top: 2rem;
+      }
+    }
+
+    /* Small mobile devices */
+    @media (max-width: 375px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      p {
+        font-size: 0.9rem;
       }
 
       .play-button {
@@ -127,9 +196,10 @@
 
   <a href="game.html" class="play-button">HRÁT HRU</a>
 
-  <p style="margin-top: 3rem; font-size: 0.9rem; opacity: 0.7;">
-    Ovládání: Šipky nebo WASD pro pohyb, mezerník pro skok
-  </p>
+  <div class="controls-info">
+    <p>Ovládání: Šipky nebo WASD pro pohyb, mezerník pro skok</p>
+    <p>Na mobilních zařízeních: Dotykové ovládací prvky na obrazovce</p>
+  </div>
 </body>
 
 </html>

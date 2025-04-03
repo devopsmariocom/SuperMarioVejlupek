@@ -21,6 +21,15 @@ class Player {
     this.color = '#FF0000';
     this.lives = 3;
     this.score = 0;
+
+    // Mobile-specific properties
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Adjust properties for mobile if needed
+    if (this.isMobile) {
+      this.speed = 6; // Slightly faster movement on mobile for better responsiveness
+      this.jumpForce = 16; // Slightly higher jump on mobile
+    }
   }
 
   /**
@@ -45,6 +54,19 @@ class Player {
     if (input.keys.up && !this.isJumping) {
       this.velocityY = -this.jumpForce;
       this.isJumping = true;
+
+      // Add a small horizontal boost when jumping on mobile for better control
+      if (this.isMobile && (input.keys.left || input.keys.right)) {
+        this.velocityX *= 1.2; // Boost horizontal movement during jump
+      }
+    }
+
+    // Allow small jump control in the air on mobile
+    if (this.isMobile && this.isJumping && this.velocityY < 0) {
+      // Slightly adjust jump height based on how long jump button is held
+      if (!input.keys.up && this.velocityY < -5) {
+        this.velocityY = -5; // Cut jump short if button released
+      }
     }
 
     // Update position

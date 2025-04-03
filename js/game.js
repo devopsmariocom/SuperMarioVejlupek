@@ -80,25 +80,171 @@ class Game {
    * Toggle fullscreen mode
    */
   toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      // Enter fullscreen
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-      } else if (document.documentElement.webkitRequestFullscreen) {
-        document.documentElement.webkitRequestFullscreen();
-      } else if (document.documentElement.msRequestFullscreen) {
-        document.documentElement.msRequestFullscreen();
+    console.log('Toggling fullscreen mode');
+
+    // Check if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    try {
+      // Implementace pro mobilní zařízení - používáme jednodušší přístup
+      if (isMobile) {
+        console.log('Mobile device detected');
+
+        // Speciální implementace pro iOS
+        if (isIOS) {
+          console.log('iOS device detected');
+
+          // Nastavíme canvas na celou obrazovku pomocí CSS
+          const gameContainer = document.body;
+
+          // Přepínáme třídu pro fullscreen
+          if (!gameContainer.classList.contains('ios-fullscreen')) {
+            console.log('Entering iOS fullscreen mode');
+            gameContainer.classList.add('ios-fullscreen');
+
+            // Skryjeme adresní řádek posunutím stránky dolů
+            setTimeout(() => {
+              window.scrollTo(0, 1);
+            }, 100);
+
+            // Nastavíme orientaci na landscape, pokud je to možné
+            if (screen.orientation && screen.orientation.lock) {
+              screen.orientation.lock('landscape').catch(e => {
+                console.log('Orientation lock failed: ', e);
+              });
+            }
+          } else {
+            console.log('Exiting iOS fullscreen mode');
+            gameContainer.classList.remove('ios-fullscreen');
+          }
+        }
+        // Pro Android a ostatní mobilní zařízení
+        else {
+          console.log('Android or other mobile device detected');
+
+          // Zkontrolujeme, zda jsme již v režimu celé obrazovky
+          const fullscreenElement =
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement;
+
+          if (!fullscreenElement) {
+            console.log('Entering fullscreen mode on Android');
+
+            // Zkusíme nejprve canvas
+            const enterFullscreen = async () => {
+              try {
+                if (this.canvas.requestFullscreen) {
+                  await this.canvas.requestFullscreen();
+                } else if (this.canvas.webkitRequestFullscreen) {
+                  await this.canvas.webkitRequestFullscreen();
+                } else if (this.canvas.mozRequestFullScreen) {
+                  await this.canvas.mozRequestFullScreen();
+                } else if (this.canvas.msRequestFullscreen) {
+                  await this.canvas.msRequestFullscreen();
+                } else {
+                  // Fallback na document element
+                  if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                  } else if (document.documentElement.webkitRequestFullscreen) {
+                    await document.documentElement.webkitRequestFullscreen();
+                  } else if (document.documentElement.mozRequestFullScreen) {
+                    await document.documentElement.mozRequestFullScreen();
+                  } else if (document.documentElement.msRequestFullscreen) {
+                    await document.documentElement.msRequestFullscreen();
+                  }
+                }
+
+                // Pro Android, nastavíme orientaci na landscape, pokud je to možné
+                if (screen.orientation && screen.orientation.lock) {
+                  await screen.orientation.lock('landscape').catch(e => {
+                    console.log('Orientation lock failed: ', e);
+                  });
+                }
+              } catch (err) {
+                console.error('Error attempting to enter fullscreen:', err);
+
+                // Fallback - použijeme CSS přístup jako u iOS
+                document.body.classList.add('mobile-fullscreen');
+                setTimeout(() => {
+                  window.scrollTo(0, 1);
+                }, 100);
+              }
+            };
+
+            enterFullscreen();
+          } else {
+            console.log('Exiting fullscreen mode on Android');
+
+            // Ukončíme režim celé obrazovky
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+              document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+              document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+              document.msExitFullscreen();
+            }
+
+            // Odstraníme fallback třídu, pokud byla použita
+            document.body.classList.remove('mobile-fullscreen');
+          }
+        }
       }
-    } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+      // Desktop browsers
+      else {
+        console.log('Desktop browser detected');
+
+        // Zkontrolujeme, zda jsme již v režimu celé obrazovky
+        const fullscreenElement =
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement;
+
+        if (!fullscreenElement) {
+          console.log('Entering fullscreen mode on desktop');
+
+          // Vstoupíme do režimu celé obrazovky
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+          } else if (document.documentElement.mozRequestFullScreen) {
+            document.documentElement.mozRequestFullScreen();
+          } else if (document.documentElement.msRequestFullscreen) {
+            document.documentElement.msRequestFullscreen();
+          }
+        } else {
+          console.log('Exiting fullscreen mode on desktop');
+
+          // Ukončíme režim celé obrazovky
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
       }
+    } catch (error) {
+      console.error('Fullscreen toggle error:', error);
     }
+
+    // Force resize after a short delay to ensure proper dimensions
+    setTimeout(() => {
+      this.resizeCanvas();
+      // If we're in the game, adjust game objects
+      if (this.isRunning) {
+        this.adjustGameObjects();
+      }
+    }, isMobile ? 500 : 200); // Delší timeout pro mobilní zařízení
   }
 
   /**

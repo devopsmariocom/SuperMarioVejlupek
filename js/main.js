@@ -106,9 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillRect(canvas.width / 2 - characterSize / 4, canvas.height * 0.7 + characterSize / 4, eyeSize, eyeSize);
     ctx.fillRect(canvas.width / 2 + characterSize / 8, canvas.height * 0.7 + characterSize / 4, eyeSize, eyeSize);
 
-    // Fullscreen instructions
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillText('Click the Fullscreen button for best experience', canvas.width / 2, canvas.height - textFontSize * 2);
+    // Fullscreen instructions - pouze pro desktop
+    if (!isMobile) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillText('Click the Fullscreen button for best experience', canvas.width / 2, canvas.height - textFontSize * 2);
+    }
   }
 
   // Draw the start screen
@@ -116,11 +118,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup fullscreen button event
   const fullscreenButton = document.getElementById('fullscreenButton');
-  fullscreenButton.addEventListener('click', () => {
+
+  // Use touchend for mobile and click for desktop
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  // Function to handle fullscreen toggle (pouze pro desktop)
+  const handleFullscreenToggle = (e) => {
+    console.log('Fullscreen button clicked');
+
+    if (e) {
+      e.preventDefault(); // Prevent default behavior
+      e.stopPropagation(); // Stop event propagation
+    }
+
+    // Toggle fullscreen
     game.toggleFullscreen();
-    // Redraw start screen after fullscreen change
-    setTimeout(drawStartScreen, 100);
-  });
+
+    // Redraw start screen after fullscreen change with appropriate timeout
+    setTimeout(drawStartScreen, 200);
+  };
+
+  // Přidáme event listener pouze pro desktop zařízení
+  if (!isMobile) {
+    // Pro desktop použijeme click událost
+    fullscreenButton.addEventListener('click', handleFullscreenToggle);
+  }
+
+  // Handle orientation changes for all mobile devices
+  if (isMobile) {
+    // Listen for orientation changes
+    window.addEventListener('orientationchange', () => {
+      // Redraw after orientation change
+      setTimeout(drawStartScreen, 300);
+    });
+
+    // Also listen for resize events that might be triggered by orientation changes
+    window.addEventListener('resize', () => {
+      // Only redraw if we're not in the game yet
+      if (!game.isRunning) {
+        setTimeout(drawStartScreen, 300);
+      }
+    });
+  }
 
   // Start game on space key or touch
   function startGameHandler(e) {

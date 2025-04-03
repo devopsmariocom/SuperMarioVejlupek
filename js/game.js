@@ -468,16 +468,80 @@ class Game {
 
     this.ctx.font = `${textFontSize}px Arial`;
     this.ctx.fillText(`Final Score: ${this.player.score}`, this.width / 2, this.height / 2 + textFontSize);
-    this.ctx.fillText('Press SPACE to play again', this.width / 2, this.height / 2 + textFontSize * 3);
+
+    // Check if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Draw restart button/text
+    const restartY = this.height / 2 + textFontSize * 3;
+
+    if (isMobile) {
+      // Draw a button-like background for mobile
+      const restartText = 'TAP HERE TO PLAY AGAIN';
+      const textWidth = this.ctx.measureText(restartText).width;
+      const padding = textFontSize * 1.2;
+
+      // Button background
+      this.ctx.fillStyle = 'rgba(255, 87, 34, 0.8)'; // Orange background
+      this.ctx.fillRect(
+        this.width / 2 - textWidth / 2 - padding,
+        restartY - textFontSize - padding / 2,
+        textWidth + padding * 2,
+        textFontSize + padding
+      );
+
+      // Button text
+      this.ctx.fillStyle = 'white';
+      this.ctx.fillText(restartText, this.width / 2, restartY);
+
+      // Store the button coordinates for touch detection
+      this.restartButtonArea = {
+        x: this.width / 2 - textWidth / 2 - padding,
+        y: restartY - textFontSize - padding / 2,
+        width: textWidth + padding * 2,
+        height: textFontSize + padding
+      };
+    } else {
+      this.ctx.fillStyle = '#FFFFFF';
+      this.ctx.fillText('Press SPACE to play again', this.width / 2, restartY);
+    }
 
     // Listen for space key to restart
     const restartHandler = (e) => {
       if (e.key === ' ' || e.code === 'Space') {
         window.removeEventListener('keydown', restartHandler);
+        this.canvas.removeEventListener('touchstart', touchRestartHandler);
         this.start();
       }
     };
+
+    // Touch handler for mobile restart
+    const touchRestartHandler = (e) => {
+      e.preventDefault();
+
+      // Get touch coordinates
+      const touch = e.touches[0];
+      const touchX = touch.clientX;
+      const touchY = touch.clientY;
+
+      // Check if touch is within the restart button area
+      if (this.restartButtonArea) {
+        const btn = this.restartButtonArea;
+        if (
+          touchX >= btn.x &&
+          touchX <= btn.x + btn.width &&
+          touchY >= btn.y &&
+          touchY <= btn.y + btn.height
+        ) {
+          window.removeEventListener('keydown', restartHandler);
+          this.canvas.removeEventListener('touchstart', touchRestartHandler);
+          this.start();
+        }
+      }
+    };
+
     window.addEventListener('keydown', restartHandler);
+    this.canvas.addEventListener('touchstart', touchRestartHandler, { passive: false });
   }
 
   /**
@@ -500,10 +564,47 @@ class Game {
     this.ctx.font = `${textFontSize}px Arial`;
     this.ctx.fillText(`Final Score: ${this.player.score}`, this.width / 2, this.height / 2 + textFontSize);
     this.ctx.fillText('You defeated the Banana Boss!', this.width / 2, this.height / 2 + textFontSize * 2);
-    this.ctx.fillText('Press SPACE to play again', this.width / 2, this.height / 2 + textFontSize * 4);
+
+    // Check if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Draw restart button/text
+    const restartY = this.height / 2 + textFontSize * 4;
+
+    if (isMobile) {
+      // Draw a button-like background for mobile
+      const restartText = 'TAP HERE TO PLAY AGAIN';
+      const textWidth = this.ctx.measureText(restartText).width;
+      const padding = textFontSize * 1.2;
+
+      // Button background
+      this.ctx.fillStyle = 'rgba(255, 215, 0, 0.8)'; // Gold background
+      this.ctx.fillRect(
+        this.width / 2 - textWidth / 2 - padding,
+        restartY - textFontSize - padding / 2,
+        textWidth + padding * 2,
+        textFontSize + padding
+      );
+
+      // Button text
+      this.ctx.fillStyle = 'black';
+      this.ctx.fillText(restartText, this.width / 2, restartY);
+
+      // Store the button coordinates for touch detection
+      this.winRestartButtonArea = {
+        x: this.width / 2 - textWidth / 2 - padding,
+        y: restartY - textFontSize - padding / 2,
+        width: textWidth + padding * 2,
+        height: textFontSize + padding
+      };
+    } else {
+      this.ctx.fillStyle = '#FFD700';
+      this.ctx.fillText('Press SPACE to play again', this.width / 2, restartY);
+    }
 
     // Draw a crown
     const crownSize = Math.max(50, Math.floor(80 * this.scale));
+    this.ctx.fillStyle = '#FFD700';
     this.ctx.beginPath();
     this.ctx.moveTo(this.width / 2 - crownSize, this.height / 2 - titleFontSize * 2);
     this.ctx.lineTo(this.width / 2 - crownSize / 2, this.height / 2 - titleFontSize * 3);
@@ -516,9 +617,37 @@ class Game {
     const restartHandler = (e) => {
       if (e.key === ' ' || e.code === 'Space') {
         window.removeEventListener('keydown', restartHandler);
+        this.canvas.removeEventListener('touchstart', touchRestartHandler);
         this.start();
       }
     };
+
+    // Touch handler for mobile restart
+    const touchRestartHandler = (e) => {
+      e.preventDefault();
+
+      // Get touch coordinates
+      const touch = e.touches[0];
+      const touchX = touch.clientX;
+      const touchY = touch.clientY;
+
+      // Check if touch is within the restart button area
+      if (this.winRestartButtonArea) {
+        const btn = this.winRestartButtonArea;
+        if (
+          touchX >= btn.x &&
+          touchX <= btn.x + btn.width &&
+          touchY >= btn.y &&
+          touchY <= btn.y + btn.height
+        ) {
+          window.removeEventListener('keydown', restartHandler);
+          this.canvas.removeEventListener('touchstart', touchRestartHandler);
+          this.start();
+        }
+      }
+    };
+
     window.addEventListener('keydown', restartHandler);
+    this.canvas.addEventListener('touchstart', touchRestartHandler, { passive: false });
   }
 }

@@ -50,9 +50,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Instructions
     ctx.font = `${textFontSize}px Arial`;
     const lineSpacing = textFontSize * 1.5;
-    ctx.fillText('Use arrow keys or WASD to move', canvas.width / 2, canvas.height / 2);
+
+    // Check if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      ctx.fillText('Use on-screen buttons to move and jump', canvas.width / 2, canvas.height / 2);
+    } else {
+      ctx.fillText('Use arrow keys or WASD to move', canvas.width / 2, canvas.height / 2);
+    }
+
     ctx.fillText('Jump on enemies to defeat them', canvas.width / 2, canvas.height / 2 + lineSpacing);
-    ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2 + lineSpacing * 2.5);
+
+    // Start game text - make it more prominent for mobile users
+    const startY = canvas.height / 2 + lineSpacing * 2.5;
+
+    // Draw a button-like background for the start text on mobile
+    if (isMobile) {
+      const startText = 'TAP HERE TO START';
+      const textWidth = ctx.measureText(startText).width;
+      const padding = textFontSize * 1.2;
+
+      // Button background
+      ctx.fillStyle = 'rgba(255, 87, 34, 0.8)'; // Orange background
+      ctx.fillRect(
+        canvas.width / 2 - textWidth / 2 - padding,
+        startY - textFontSize - padding / 2,
+        textWidth + padding * 2,
+        textFontSize + padding
+      );
+
+      // Button text
+      ctx.fillStyle = 'white';
+      ctx.fillText(startText, canvas.width / 2, startY);
+
+      // Store the button coordinates for touch detection
+      window.startButtonArea = {
+        x: canvas.width / 2 - textWidth / 2 - padding,
+        y: startY - textFontSize - padding / 2,
+        width: textWidth + padding * 2,
+        height: textFontSize + padding
+      };
+    } else {
+      ctx.fillStyle = '#000000';
+      ctx.fillText('Press SPACE to start', canvas.width / 2, startY);
+    }
 
     // Draw a simple character
     ctx.fillStyle = '#FF0000';
@@ -80,14 +122,51 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(drawStartScreen, 100);
   });
 
-  // Start game on space key
+  // Start game on space key or touch
   function startGameHandler(e) {
     if (e.key === ' ' || e.code === 'Space') {
-      window.removeEventListener('keydown', startGameHandler);
-      window.removeEventListener('resize', handleResize);
-      game.start();
+      startGame();
     }
   }
 
+  // Touch handler for starting the game
+  function touchStartHandler(e) {
+    e.preventDefault();
+
+    // Get touch coordinates
+    const touch = e.touches[0];
+    const touchX = touch.clientX;
+    const touchY = touch.clientY;
+
+    // Check if touch is within the start button area (for mobile)
+    if (window.startButtonArea) {
+      const btn = window.startButtonArea;
+      if (
+        touchX >= btn.x &&
+        touchX <= btn.x + btn.width &&
+        touchY >= btn.y &&
+        touchY <= btn.y + btn.height
+      ) {
+        startGame();
+      }
+    } else {
+      // If no specific button area, allow tap anywhere to start (fallback)
+      startGame();
+    }
+  }
+
+  // Common function to start the game
+  function startGame() {
+    // Remove all event listeners
+    window.removeEventListener('keydown', startGameHandler);
+    window.removeEventListener('resize', handleResize);
+    canvas.removeEventListener('touchstart', touchStartHandler);
+
+    // Start the game
+    game.start();
+  }
+
+  // Add event listeners
   window.addEventListener('keydown', startGameHandler);
+  canvas.addEventListener('touchstart', touchStartHandler, { passive: false });
 });

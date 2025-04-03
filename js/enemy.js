@@ -15,9 +15,14 @@ class Enemy {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.speed = speed;
+    this.speed = speed; // Make sure this is a positive number
     this.direction = 1; // 1 for right, -1 for left
     this.color = '#00FF00';
+
+    // Ensure speed is never too small
+    if (this.speed < 1) {
+      this.speed = 1;
+    }
   }
 
   /**
@@ -25,9 +30,6 @@ class Enemy {
    * @param {Array} platforms - Array of platform objects
    */
   update(platforms) {
-    // Move horizontally
-    this.x += this.speed * this.direction;
-
     // Check if enemy is on a platform
     let onPlatform = false;
     let platformEdgeLeft = 0;
@@ -46,17 +48,55 @@ class Enemy {
       }
     }
 
-    // Change direction if at platform edge or wall
-    if (onPlatform) {
+    // If not on a platform, fall down
+    if (!onPlatform) {
+      this.y += 5; // Fall speed
+
+      // Check if we've fallen onto a platform
+      for (let platform of platforms) {
+        if (this.x + this.width > platform.x &&
+          this.x < platform.x + platform.width &&
+          this.y + this.height >= platform.y &&
+          this.y + this.height <= platform.y + 15) { // Slightly larger detection area
+
+          // Snap to platform
+          this.y = platform.y - this.height;
+          onPlatform = true;
+          platformEdgeLeft = platform.x;
+          platformEdgeRight = platform.x + platform.width;
+          break;
+        }
+      }
+
+      // If we've fallen too far, reset position to a platform
+      if (this.y > 1000) {
+        // Find a suitable platform
+        for (let platform of platforms) {
+          if (platform.width >= 100) {
+            this.x = platform.x + platform.width / 2 - this.width / 2;
+            this.y = platform.y - this.height;
+            break;
+          }
+        }
+      }
+    } else {
+      // Move horizontally only if on a platform
+      this.x += this.speed * this.direction;
+
+      // Check if we're at the edge of the platform
       if (this.x <= platformEdgeLeft || this.x + this.width >= platformEdgeRight) {
+        // Change direction
         this.direction *= -1;
+
+        // Move away from the edge to prevent getting stuck
+        this.x = Math.max(platformEdgeLeft, Math.min(platformEdgeRight - this.width, this.x));
       }
     }
 
-    // Screen boundaries - use base dimensions for consistent gameplay
-    const baseWidth = 800;  // Base design width
-    if (this.x < 0 || this.x + this.width > baseWidth) {
-      this.direction *= -1;
+    // Screen boundary check
+    if (this.x < 0) {
+      this.direction = 1; // Force direction to right
+      this.x = 0;
     }
   }
 
@@ -101,15 +141,53 @@ const EnemyGenerator = {
   generateEnemies: function (platforms, count = 3) {
     const enemies = [];
 
-    // Skip the first platform (usually the ground)
-    for (let i = 1; i < platforms.length && enemies.length < count; i++) {
-      const platform = platforms[i];
+    // Filter out suitable platforms (wide enough and not at the very beginning)
+    const suitablePlatforms = platforms.filter(p =>
+      p.width >= 150 && // Wide enough for enemy movement
+      p.x > 300 && // Not too close to start
+      p.y < 550 // Not at the very bottom (ground)
+    );
 
-      // Only add enemy if platform is wide enough
-      if (platform.width >= 100) {
-        const x = platform.x + 20;
-        const y = platform.y - 30; // Position enemy on top of platform
-        enemies.push(new Enemy(x, y));
+    // Sort by width (descending) to prioritize wider platforms
+    suitablePlatforms.sort((a, b) => b.width - a.width);
+
+    // Create enemies on the best platforms
+    for (let i = 0; i < Math.min(count, suitablePlatforms.length); i++) {
+      const platform = suitablePlatforms[i];
+
+      // Position enemy in the middle of the platform
+      const x = platform.x + platform.width / 2 - 15; // Center the 30px wide enemy
+      const y = platform.y - 30; // Position on top of platform
+
+      // Use a fixed speed to ensure consistent movement
+      const speed = 2;
+
+      // Create the enemy
+      const enemy = new Enemy(x, y, 30, 30, speed);
+
+      // Add to enemies array
+      enemies.push(enemy);
+    }
+
+    // If we need more enemies, add some on ground platforms
+    if (enemies.length < count) {
+      // Find ground platforms
+      const groundPlatforms = platforms.filter(p =>
+        p.y >= 550 && // Near the bottom
+        p.width >= 200 && // Wide enough
+        p.x > 300 // Not too close to start
+      );
+
+      for (let i = 0; i < Math.min(count - enemies.length, groundPlatforms.length); i++) {
+        const platform = groundPlatforms[i];
+
+        const x = platform.x + platform.width / 2 - 15;
+        const y = platform.y - 30;
+
+        // Create the enemy with fixed speed
+        const enemy = new Enemy(x, y, 30, 30, 2);
+
+        enemies.push(enemy);
       }
     }
 

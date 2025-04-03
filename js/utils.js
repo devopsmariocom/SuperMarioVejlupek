@@ -1,0 +1,1 @@
+const Utils={checkCollision:function(t,n){return t.x<n.x+n.width&&t.x+t.width>n.x&&t.y<n.y+n.height&&t.y+t.height>n.y},randomInt:function(t,n){return Math.floor(Math.random()*(n-t+1))+t}};

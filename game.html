@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#000000">
+  <meta name="full-screen" content="yes">
+  <meta name="x5-fullscreen" content="true">
+  <meta name="360-fullscreen" content="true">
+  <title>Super Mario Vejlupek - Hra</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background-color: #222;
+      position: fixed;
+      /* Prevent bounce on mobile */
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      background-color: #87CEEB;
+      /* Sky blue background */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    #fullscreenButton {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      /* Higher z-index to ensure it's above other elements */
+      padding: 12px;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      min-width: 60px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      /* Improve touch handling */
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+
+    /* Fullscreen icon */
+    #fullscreenButton::before {
+      content: "";
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+      margin-right: 5px;
+    }
+
+    #fullscreenButton:hover {
+      background-color: rgba(0, 0, 0, 0.9);
+    }
+
+    #fullscreenButton:active {
+      transform: scale(0.95);
+      background-color: rgba(0, 0, 0, 1);
+    }
+
+    #backButton {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      padding: 8px 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      /* Larger for touch */
+      min-width: 44px;
+      /* Minimum touch target size */
+      min-height: 44px;
+      /* Minimum touch target size */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #backButton:hover {
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    /* Touch button styles */
+    .touch-button {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* Mobile-specific styles */
+    .mobile-device #fullscreenButton {
+      display: none !important;
+      /* Skryjeme fullscreen tlačítko na mobilních zařízeních */
+    }
+
+    /* Odstraněny animace a další styly pro fullscreen tlačítko na mobilních zařízeních */
+
+    /* Adjust UI for smaller screens */
+    @media (max-width: 768px) {
+
+      #fullscreenButton,
+      #backButton {
+        padding: 12px;
+        font-size: 18px;
+      }
+
+      #fullscreenButton {
+        top: 15px;
+        right: 15px;
+      }
+
+      #backButton {
+        top: 15px;
+        left: 15px;
+      }
+    }
+
+    /* Fullscreen mode for mobile devices */
+    .mobile-fullscreen,
+    .ios-fullscreen,
+    .processing-fullscreen {
+      position: fixed !important;
+      width: 100% !important;
+      height: 100% !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      overflow: hidden !important;
+      background-color: #000 !important;
+      z-index: 9999 !important;
+    }
+
+    /* Zabraňuje probliknutí během zpracování fullscreen */
+    .processing-fullscreen * {
+      transition: none !important;
+    }
+
+    .mobile-fullscreen canvas,
+    .ios-fullscreen canvas,
+    .processing-fullscreen canvas {
+      position: fixed !important;
+      width: 100% !important;
+      height: 100% !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 10000 !important;
+      object-fit: contain !important;
+    }
+
+    .mobile-fullscreen #fullscreenButton,
+    .ios-fullscreen #fullscreenButton,
+    .processing-fullscreen #fullscreenButton {
+      z-index: 10001 !important;
+      background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .mobile-fullscreen #backButton,
+    .ios-fullscreen #backButton,
+    .processing-fullscreen #backButton {
+      z-index: 10001 !important;
+    }
+
+    /* Zakážeme klikání na tlačítko během zpracování fullscreen */
+    .processing-fullscreen #fullscreenButton {
+      pointer-events: none !important;
+      opacity: 0.5 !important;
+    }
+
+    /* iOS-specific fixes */
+    @supports (-webkit-touch-callout: none) {
+
+      html,
+      body {
+        height: -webkit-fill-available;
+        /* Prevent overscroll/bounce effect */
+        position: fixed;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      canvas {
+        /* Ensure canvas takes full height on iOS */
+        height: -webkit-fill-available !important;
+      }
+
+      #fullscreenButton {
+        /* Make button larger and more tappable on iOS */
+        min-width: 70px;
+        min-height: 70px;
+        top: 25px;
+        right: 25px;
+      }
+
+      #fullscreenButton::before {
+        /* Use a simpler icon for iOS */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M5 5h5v2H7v3H5V5m9 0h5v5h-2V7h-3V5m3 9h2v5h-5v-2h3v-3m-7 3v2H5v-5h2v3h3z'/%3E%3C/svg%3E");
+        width: 32px;
+        height: 32px;
+      }
+
+      /* Ensure iOS Safari doesn't apply its own styles */
+      input[type="button"],
+      input[type="submit"],
+      button {
+        -webkit-appearance: none;
+        border-radius: 0;
+      }
+
+      /* iOS fullscreen specific styles */
+      .ios-fullscreen {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+
+      /* Change fullscreen button appearance in fullscreen mode */
+      .ios-fullscreen #fullscreenButton::before {
+        /* Use exit fullscreen icon */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z'/%3E%3C/svg%3E");
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <button id="fullscreenButton" class="touch-button"></button>
+  <a href="index.html" id="backButton" class="touch-button">← Zpět</a>
+
+  <script>
+    // Detect mobile device and adjust UI accordingly
+    document.addEventListener('DOMContentLoaded', function () {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const fullscreenButton = document.getElementById('fullscreenButton');
+
+      if (isMobile) {
+        // Add mobile class to body
+        document.body.classList.add('mobile-device');
+
+        // Skryjeme fullscreen tlačítko na mobilních zařízeních
+        fullscreenButton.style.display = 'none';
+      } else {
+        // Desktop text
+        fullscreenButton.textContent = 'Fullscreen';
+      }
+    });
+  </script>
+
+  <!-- Game modules -->
+  <script src="js/utils.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/platform.js"></script>
+  <script src="js/enemy.js"></script>
+  <script src="js/boss.js"></script>
+  <script src="js/mysterybox.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>

@@ -18,6 +18,8 @@ class Player {
     this.jumpForce = 15;
     this.gravity = 0.8;
     this.isJumping = false;
+    this.canDoubleJump = false; // Track if player can perform a double jump
+    this.hasDoubleJumped = false; // Track if player has already used double jump
     this.color = '#FF0000';
     this.lives = 3;
     this.score = 0;
@@ -50,6 +52,10 @@ class Player {
     this.reversedControls = false;
     this.speedBoost = false;
     this.shrunk = false;
+
+    // Double jump effect
+    this.doubleJumpEffect = false;
+    this.doubleJumpEffectTimer = 0;
   }
 
   /**
@@ -95,10 +101,31 @@ class Player {
     if (input.keys.up && !this.isJumping) {
       this.velocityY = -this.jumpForce;
       this.isJumping = true;
+      this.canDoubleJump = true; // Enable double jump when first jump occurs
+      this.hasDoubleJumped = false; // Reset double jump flag
 
       // Add a small horizontal boost when jumping on mobile for better control
       if (this.isMobile && (input.keys.left || input.keys.right)) {
         this.velocityX *= 1.2; // Boost horizontal movement during jump
+      }
+    }
+
+    // Double jump when in the air
+    else if (input.keys.up && input.keys.upPressed && this.isJumping && this.canDoubleJump && !this.hasDoubleJumped) {
+      this.velocityY = -this.jumpForce * 0.8; // Slightly weaker than first jump
+      this.hasDoubleJumped = true; // Mark double jump as used
+      this.canDoubleJump = false; // Prevent further double jumps until landing
+
+      // Visual feedback for double jump - temporarily change color
+      this.doubleJumpEffect = true;
+      this.doubleJumpEffectTimer = 15; // Show effect for 15 frames
+    }
+
+    // Handle double jump visual effect
+    if (this.doubleJumpEffect) {
+      this.doubleJumpEffectTimer--;
+      if (this.doubleJumpEffectTimer <= 0) {
+        this.doubleJumpEffect = false;
       }
     }
 
@@ -149,6 +176,8 @@ class Player {
         this.y = platform.y - this.height;
         this.velocityY = 0;
         this.isJumping = false;
+        this.hasDoubleJumped = false; // Reset double jump when landing
+        this.canDoubleJump = false; // Reset double jump capability
       }
     }
 
@@ -201,15 +230,38 @@ class Player {
       const cloudRadius = this.width * 0.8;
 
       // Draw cloud puffs
-      ctx.arc(cloudX - cloudRadius/2, cloudY, cloudRadius/2, 0, Math.PI * 2);
-      ctx.arc(cloudX, cloudY - cloudRadius/4, cloudRadius/1.7, 0, Math.PI * 2);
-      ctx.arc(cloudX + cloudRadius/2, cloudY, cloudRadius/2, 0, Math.PI * 2);
+      ctx.arc(cloudX - cloudRadius / 2, cloudY, cloudRadius / 2, 0, Math.PI * 2);
+      ctx.arc(cloudX, cloudY - cloudRadius / 4, cloudRadius / 1.7, 0, Math.PI * 2);
+      ctx.arc(cloudX + cloudRadius / 2, cloudY, cloudRadius / 2, 0, Math.PI * 2);
       ctx.fill();
     }
 
     // Draw player body
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.x - offsetX, this.y, this.width, this.height);
+    if (this.doubleJumpEffect) {
+      // Flash white during double jump
+      const flashIntensity = Math.sin(Date.now() / 30) * 0.5 + 0.5;
+      ctx.fillStyle = `rgba(255, 255, 255, ${flashIntensity})`;
+
+      // Draw a glow effect
+      ctx.shadowColor = 'white';
+      ctx.shadowBlur = 10;
+
+      // Draw the player with glow
+      ctx.fillRect(this.x - offsetX, this.y, this.width, this.height);
+
+      // Reset shadow for other elements
+      ctx.shadowBlur = 0;
+
+      // Draw the player's normal color with some transparency
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = 0.7;
+      ctx.fillRect(this.x - offsetX, this.y, this.width, this.height);
+      ctx.globalAlpha = 1.0;
+    } else {
+      // Normal drawing
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x - offsetX, this.y, this.width, this.height);
+    }
 
     // Draw suit if player has suit effect
     if (this.suit) {

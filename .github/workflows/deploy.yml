@@ -25,7 +25,7 @@ jobs:
           if [ -d "canvas-game" ]; then
             # If canvas-game exists, copy its contents to dist/canvas-game
             mkdir -p dist/canvas-game
-            cp -r canvas-game/* dist/canvas-game/
+            cp -r * dist/
           else
             # If no canvas-game directory, copy js files directly
             mkdir -p dist/js
@@ -58,9 +58,9 @@ jobs:
             done
           fi
 
-          # Minify JS in canvas-game/js if it exists
-          if [ -d "dist/canvas-game/js" ]; then
-            for file in dist/canvas-game/js/*.js; do
+          # Minify JS in js if it exists
+          if [ -d "dist/js" ]; then
+            for file in dist/js/*.js; do
               if [ -f "$file" ]; then
                 terser "$file" -o "$file" -c -m
               fi
@@ -78,9 +78,9 @@ jobs:
             done
           fi
 
-          # Minify CSS in canvas-game/css if it exists
-          if [ -d "dist/canvas-game/css" ]; then
-            for file in dist/canvas-game/css/*.css; do
+          # Minify CSS in css if it exists
+          if [ -d "dist/css" ]; then
+            for file in dist/css/*.css; do
               if [ -f "$file" ]; then
                 cleancss -o "$file" "$file"
               fi
